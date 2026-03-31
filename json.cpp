@@ -30,7 +30,7 @@ The official repository for this library is at https://github.com/VA7ODR/json
 #include <optional>
 #include <utility>
 #include <string>
-#include <strstream>
+// #include <strstream>
 #include <sstream>
 
 #if defined _WINDOWS && defined __clang__
