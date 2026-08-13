@@ -775,6 +775,7 @@ namespace JSON_NAMESPACE
 	char * MovingCharPointer::orig()
 	{
 		*m_current = 0;
+		loc.resize((size_t)(m_current - m_orig));
 		return m_orig;
 	}
 
@@ -1121,17 +1122,19 @@ namespace JSON_NAMESPACE
 			ret++;
 		}
 		iterator it;
+		bool bStarted = false;
 		for (it = begin(); it != end(); ++it) {
 			if (it->second.isA() != JSON_VOID) {
-				if (it != begin()) {
+				if (bStarted) {
 					if (bPretty) {
 						ret += 2;
 					} else {
 						ret++;
 					}
 				}
+				bStarted = true;
 				if (bPretty) {
-					ret += depth + esize(it->first) + 4;
+					ret += depth + esize(it->first) + 5;
 				} else {
 					ret += esize(it->first) + 3;
 				}
@@ -3260,6 +3263,7 @@ namespace JSON_NAMESPACE
 		sdstring ret;
 		MovingCharPointer ptr(ret, l);
 		cprint(ptr, depth, bPretty);
+		ptr.orig();
 		return ret;
 	}
 
@@ -4188,6 +4192,7 @@ namespace JSON_NAMESPACE
 			sdstring ret;
 			MovingCharPointer ptr(ret, l);
 			val.obj->cprint(ptr, iDepth, bPretty);
+			ptr.orig();
 			if (preWriter == nullptr) {
 				return ret;
 			} else {
@@ -4200,6 +4205,7 @@ namespace JSON_NAMESPACE
 			sdstring ret;
 			MovingCharPointer ptr(ret, l);
 			val.arr->cprint(ptr, iDepth, bPretty);
+			ptr.orig();
 
 			if (preWriter == nullptr) {
 				return ret;
@@ -4212,6 +4218,7 @@ namespace JSON_NAMESPACE
 			sdstring t;
 			MovingCharPointer ptr(t, l);
 			val.cprint(ptr, iDepth, bPretty);
+			ptr.orig();
 			if (preWriter == nullptr) {
 				return t;
 			} else {
