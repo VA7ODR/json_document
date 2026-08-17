@@ -227,7 +227,7 @@ The following program will open a JSON file and resave it in a "pretty" format w
 
 LICENCE
 -------
-Copyright (c) 2012-2023 James Baker
+Copyright (c) 2012-2026 James Baker
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
