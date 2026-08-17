@@ -66,59 +66,8 @@ The official repository for this library is at https://github.com/VA7ODR/json
  }
  \endcode
  */
-
-//#if !defined JSON_HPP_
-//
-//#	if defined __GNUC__
-//#		define DEPRECATED(func) func __attribute__((deprecated))
-//#	elif defined(_MSC_VER)
-//#		define DEPRECATED(func) __declspec(deprecated) func
-//#	else
-//#		pragma message("WARNING: You need to implement DEPRECATED for this compiler")
-//#		define DEPRECATED(func) func
-//#	endif
-//
-//#	define JSON_DOCUMENT_VERSION "1.1.0"
-//#	define JSON_NUMBER_PRECISION 14
-//
-//#	if defined SUPPORT_ORDERED_JSON && !defined DONE_OJSON
-//namespace json
-//{
-//	class value;
-//	class document;
-//	class object;
-//	class array;
-//}	 // namespace json
-//
-//#		define DO_OJSON_STUFF
-//#		define JSON_NAMESPACE ojson
-//#		include "json_main.hpp"
-//#		undef DO_OJSON_STUFF
-//#		undef JSON_NAMESPACE
-//#		define DONE_OJSON
-//#	endif
-//
-//#	if defined JSON_NAMESPACE
-//#		undef JSON_NAMESPACE
-//#	endif
-//
-//#	define JSON_NAMESPACE json
-//#	include "json_main.hpp"
-//
-//#	define JSON_HPP_
-//
-//#endif
-
 #pragma once
 
-#if defined __GNUC__
-#	define DEPRECATED(func) func __attribute__((deprecated))
-#elif defined(_MSC_VER)
-#	define DEPRECATED(func) __declspec(deprecated) func
-#else
-#	pragma message("WARNING: You need to implement DEPRECATED for this compiler")
-#	define DEPRECATED(func) func
-#endif
 
 #define JSON_DOCUMENT_VERSION "1.1.1"
 #define JSON_NUMBER_PRECISION 14

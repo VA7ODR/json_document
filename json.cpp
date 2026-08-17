@@ -33,9 +33,6 @@ The official repository for this library is at https://github.com/VA7ODR/json
 // #include <strstream>
 #include <sstream>
 
-#if defined _WINDOWS && defined __clang__
-#	define __uncaught_exception std::uncaught_exception
-#endif
 
 #include "json.hpp"
 
@@ -48,18 +45,6 @@ The official repository for this library is at https://github.com/VA7ODR/json
 #	define JSON_NAMESPACE ojson
 #endif
 
-#if defined __GNUC__
-#	define UNSIGNEDMAX 0xFFFFFFFFFFFFFFFFLL
-#	define SIGNEDMAX	0x7FFFFFFFFFFFFFFFLL
-#else
-#	define UNSIGNEDMAX 0xFFFFFFFFFFFFFFFF
-#	define SIGNEDMAX	0x7FFFFFFFFFFFFFFF
-#endif
-
-#if defined _WINDOWS
-#	define _CRT_SECURE_NO_DEPRICATE 1
-#	define _CRT_SECURE_NO_WARNINGS	 1
-#endif
 namespace JSON_NAMESPACE
 {
 	class MovingCharPointer
@@ -4462,7 +4447,6 @@ namespace JSON_NAMESPACE
 		operator--();
 		return tmp;
 	}
-#if defined _WIN32
 	bool iterator::operator==(const iterator & rhs) const
 	{
 		if (bNone && rhs.bNone) {
@@ -4486,31 +4470,6 @@ namespace JSON_NAMESPACE
 			return obj_it != rhs.obj_it;
 		}
 	}
-#else
-	bool iterator::operator==(const iterator & rhs)
-	{
-		if (bNone && rhs.bNone) {
-			return true;
-		}
-		if (bIsArray) {
-			return arr_it == rhs.arr_it;
-		} else {
-			return obj_it == rhs.obj_it;
-		}
-	}
-
-	bool iterator::operator!=(const iterator & rhs)
-	{
-		if (bNone && rhs.bNone) {
-			return false;
-		}
-		if (bIsArray) {
-			return arr_it != rhs.arr_it;
-		} else {
-			return obj_it != rhs.obj_it;
-		}
-	}
-#endif
 	value & iterator::operator*()
 	{
 		if (!bNone) {

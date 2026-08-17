@@ -67,11 +67,7 @@ namespace json
 			document cleanUpViews();
 
 		private:
-#if defined __GNUC__
-            static bool viewSort(const value &a, const value &b);
-#else
-            static bool viewSort(value &a, value &b);
-#endif
+			static bool viewSort(const value &a, const value &b);
 			document indexView(const std::string &sName, std::string &sKeys, value &keys);
 			size_t matchLevel(value& keys, value& mappedResult);
 			value&  getViewWorker(value & ret, const std::string &sName, value & keys, bool bReduce);

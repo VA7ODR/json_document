@@ -922,13 +922,8 @@ namespace JSON_NAMESPACE
 			iterator operator++(int);
 			iterator & operator--();
 			iterator operator--(int);
-#	if defined _WIN32
 			bool operator==(const iterator & rhs) const;
 			bool operator!=(const iterator & rhs) const;
-#	else
-			bool operator==(const iterator & rhs);
-			bool operator!=(const iterator & rhs);
-#	endif
 			value & operator*();
 			value key();
 

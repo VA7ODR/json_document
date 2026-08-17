@@ -23,13 +23,7 @@ The official repository for this library is at https://github.com/VA7ODR/json
 
 */
 
-// #if !defined DATA_HPP
-// #if !defined DATA_NAMESPACE
-// #define DATA_HPP
-// #define DATA_NAMESPACE data
-// #endif
 
-//#include "json.hpp"
 #include "SDString/sdstring.hpp"
 
 #if !defined JSON_NAMESPACE
@@ -55,21 +49,6 @@ namespace DATA_NAMESPACE
 				bStandAlone		= true;
 			}
 
-//			document(const sdstring & in)
-//			{
-//				bForceXMLHeader = false;
-//				bNoXMLHeader	= false;
-//				bStandAlone		= true;
-//				parseXML(in);
-//			}
-//
-//			document(const char * in)
-//			{
-//				bForceXMLHeader = false;
-//				bNoXMLHeader	= false;
-//				bStandAlone		= true;
-//				parseXML(in);
-//			}
 
 			document(const JSON_NAMESPACE::value & V) : JSON_NAMESPACE::document(V)
 			{

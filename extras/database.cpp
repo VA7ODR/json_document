@@ -287,11 +287,7 @@ namespace json
 		return ret;
 	}
 
-#ifdef __GNUC__
-    bool database::viewSort(const json::value &a, const json::value &b)
-#else
-    bool database::viewSort(json::value &a, json::value &b)
-#endif
+	bool database::viewSort(const json::value &a, const json::value &b)
 	{
 		return (*(a.find("key")) < *(b.find("key")));
 	}
