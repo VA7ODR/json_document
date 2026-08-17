@@ -27,6 +27,8 @@ cmake_minimum_required(VERSION 3.5)
 
 project(json_document)
 
+include(CTest)
+
 set (CMAKE_CXX_STANDARD 23)
 
 option(JSON_ORDERED "Is the ordered json (ojson::document) class required" ON)
@@ -86,6 +88,7 @@ if(JSON_TEST_EXAMPLE)
     add_executable(testbed test.cpp)
     target_compile_definitions(testbed PUBLIC ${JSON_TARGET_DEFINES} ${DATA_DOCUMENT_DEFINES})
     target_link_libraries(testbed PUBLIC ${PROJECT_NAME})
+    add_test(NAME json_document_unit_tests COMMAND testbed)
 endif(JSON_TEST_EXAMPLE)
 
 if(JSON_SAMPLES)

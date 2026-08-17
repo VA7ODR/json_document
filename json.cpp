@@ -25,6 +25,7 @@ The official repository for this library is at https://github.com/VA7ODR/json
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cmath>
 #include <iomanip>
 #include <optional>
@@ -203,7 +204,7 @@ namespace JSON_NAMESPACE
 
 	void SkipWhitespace(instring & in)
 	{
-		while (in.peek() == ' ' || in.peek() == '\n' || in.peek() == '\r' || in.peek() == '\t') {
+		while (std::isspace((unsigned char)in.peek())) {
 			in.skip();
 		}
 	}
@@ -228,6 +229,76 @@ namespace JSON_NAMESPACE
 			}
 		}
 		return ret;
+	}
+
+	void stringParsePermissive(sdstring & ret, instring & s, bool * bFailed)
+	{
+		s.take(); // Skip opening quote; every byte until the closing quote is data.
+		ret.clear();
+		while (s.tell() < s.size()) {
+			char c = s.take();
+			if (c == '"') return;
+			if (c != '\\') {
+				ret.push_back(c);
+				continue;
+			}
+			if (s.tell() >= s.size()) {
+				ret.push_back('\\');
+				return;
+			}
+			char escaped = s.take();
+			switch (escaped) {
+				case '"': ret.push_back('"'); break;
+				case '\\': ret.push_back('\\'); break;
+				case '/': ret.push_back('/'); break;
+				case 'b': ret.push_back('\b'); break;
+				case 'f': ret.push_back('\f'); break;
+				case 'n': ret.push_back('\n'); break;
+				case 'r': ret.push_back('\r'); break;
+				case 't': ret.push_back('\t'); break;
+				case 'u': {
+					unsigned h = 0;
+					size_t hexStart = s.tell();
+					bool valid = s.size() - s.tell() >= 4;
+					for (int i = 0; valid && i < 4; ++i) {
+						unsigned char digit = (unsigned char)s.take();
+						if (digit >= '0' && digit <= '9') h = (h << 4) | (digit - '0');
+						else if (digit >= 'A' && digit <= 'F') h = (h << 4) | (digit - 'A' + 10);
+						else if (digit >= 'a' && digit <= 'f') h = (h << 4) | (digit - 'a' + 10);
+						else valid = false;
+					}
+					if (valid && h >= 0xD800 && h <= 0xDBFF && s.size() - s.tell() >= 6 && s.Str()[s.tell()] == '\\' && s.Str()[s.tell() + 1] == 'u') {
+						unsigned h2 = 0;
+						bool pair = true;
+						for (int i = 0; pair && i < 4; ++i) {
+							unsigned char digit = (unsigned char)s.Str()[s.tell() + 2 + i];
+							if (digit >= '0' && digit <= '9') h2 = (h2 << 4) | (digit - '0');
+							else if (digit >= 'A' && digit <= 'F') h2 = (h2 << 4) | (digit - 'A' + 10);
+							else if (digit >= 'a' && digit <= 'f') h2 = (h2 << 4) | (digit - 'a' + 10);
+							else pair = false;
+						}
+						if (pair && h2 >= 0xDC00 && h2 <= 0xDFFF) {
+							s.seek(s.tell() + 6);
+							h = (((h - 0xD800) << 10) | (h2 - 0xDC00)) + 0x10000;
+						}
+					}
+					if (valid) {
+						char buffer[4];
+						auto count = size_t(UTF8<>::Encode(buffer, h) - buffer);
+						ret.append(buffer, count);
+					} else {
+						ret.append("\\u", 2);
+						ret.append(s.Str().data() + hexStart, s.tell() - hexStart);
+					}
+					break;
+				}
+				default:
+					ret.push_back('\\');
+					ret.push_back(escaped);
+					break;
+			}
+		}
+		(void)bFailed;
 	}
 
 	void stringParse(sdstring & ret, instring & s, bool * bFailed)
@@ -316,8 +387,8 @@ namespace JSON_NAMESPACE
 	{
 		const char * pStart = s.getPos();
 		bool minus			= false;
-		if (s.peek() == '-') {
-			minus = true;
+		if (s.peek() == '-' || s.peek() == '+') {
+			minus = s.peek() == '-';
 			s.take();
 		}
 
@@ -327,12 +398,6 @@ namespace JSON_NAMESPACE
 			d = s.take() - '0';
 
 			while (s.peek() >= '0' && s.peek() <= '9') {
-				if (d >= 1E307) {
-					generateError(s, "Number too big to store in double");
-					*bFailed = true;
-					ret		 = value();
-					return;
-				}
 				d = d * 10 + (s.take() - '0');
 			}
 		} else if (s.peek() != '.') {
@@ -349,11 +414,6 @@ namespace JSON_NAMESPACE
 			if (s.peek() >= '0' && s.peek() <= '9') {
 				d = d * 10 + (s.take() - '0');
 				--expFrac;
-			} else {
-				generateError(s, "At least one digit in fraction part");
-				*bFailed = true;
-				ret		 = value();
-				return;
 			}
 
 			while (s.peek() >= '0' && s.peek() <= '9') {
@@ -381,18 +441,7 @@ namespace JSON_NAMESPACE
 				exp = s.take() - '0';
 				while (s.peek() >= '0' && s.peek() <= '9') {
 					exp = exp * 10 + (s.take() - '0');
-					if (exp > 308) {
-						generateError(s, "Number too big to store in double");
-						*bFailed = true;
-						ret		 = value();
-						return;
-					}
 				}
-			} else {
-				generateError(s, "At least one digit in exponent");
-				*bFailed = true;
-				ret		 = value();
-				return;
 			}
 
 			if (expMinus) {
@@ -451,7 +500,7 @@ namespace JSON_NAMESPACE
 				return;
 			}
 			sdstring key;
-			stringParse(key, inputString, bFailed);
+			stringParsePermissive(key, inputString, bFailed);
 			if (*bFailed) {
 				ret = value();
 				return;
@@ -480,6 +529,10 @@ namespace JSON_NAMESPACE
 			switch (inputString.take()) {
 				case ',':
 					SkipWhitespace(inputString);
+					if (inputString.peek() == '}') {
+						inputString.take();
+						return;
+					}
 					break;
 
 				case '}':
@@ -535,6 +588,10 @@ namespace JSON_NAMESPACE
 			switch (c) {
 				case ',':
 					SkipWhitespace(inputString);
+					if (inputString.peek() == ']') {
+						inputString.take();
+						return;
+					}
 					break;
 
 				case ']':
@@ -578,7 +635,7 @@ namespace JSON_NAMESPACE
 					a.str.clear();
 				}
 
-				stringParse(a.str, inputString, bFailed);
+				stringParsePermissive(a.str, inputString, bFailed);
 				return;
 			}
 			case '{':
@@ -998,6 +1055,9 @@ namespace JSON_NAMESPACE
 
 			case JSON_NUMBER:
 			{
+				if (!std::isfinite(m_number)) {
+					return 4; // JSON has no NaN or Infinity literals.
+				}
 				if (str.empty()) {
 					makeStringFromNumber(str, m_places, m_number);
 				}
@@ -1037,6 +1097,10 @@ namespace JSON_NAMESPACE
 
 			case JSON_NUMBER:
 			{
+				if (!std::isfinite(m_number)) {
+					ptr.set("null", 4);
+					break;
+				}
 				if (str.empty()) {
 					makeStringFromNumber(str, m_places, m_number);
 				}
@@ -3822,7 +3886,7 @@ namespace JSON_NAMESPACE
 				break;
 
 			case JSON_NULL:
-				S.write("NULL", 4);
+				S.write("null", 4);
 				break;
 
 			case JSON_BOOLEAN:
@@ -3832,6 +3896,10 @@ namespace JSON_NAMESPACE
 			case JSON_NUMBER:
 			{
 				double dNumber			  = val.number();
+				if (!std::isfinite(dNumber)) {
+					S.write("null", 4);
+					break;
+				}
 				int iPlaces				  = val.places();
 				std::ostream::fmtflags ff = S.flags();
 				if (iPlaces >= 0) {
