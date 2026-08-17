@@ -1,75 +1,32 @@
-json::document
-==============
+# json::document
 
-The official repository for this library is at <https://github.com/VA7ODR/json>
+The official repository is <https://github.com/VA7ODR/json>. This C++23 library provides `value` and `document` types for parsing, editing, and writing JSON. It is MIT licensed. Include `json.hpp` and link the library built from `json.cpp`.
 
-The purpose of this library is to allow JSON to be used in C++ with a very simple interface similar to how you would use it in other languages that support it natively.  It is also designed to be fast.  It can parse and write megabytes in milliseconds.  It's been tested in Linux, Windows and MacOS using g++, clang++, Visual C++ and even Borland C++.
+## Namespaces and types
 
-More information regarding the JSON standard can be found here: <http://json.org/>
+- `json::value` and `json::document` are always available.
+- With `JSON_ORDERED=ON`, `ojson::value` and `ojson::document` are also built; object keys retain insertion order.
+- With `JSON_DATA_DOCUMENT=ON`, `data::document` is built as an XML-capable subclass of `json::document`.
+- With both options enabled, `odata::document` is the XML-capable ordered counterpart.
 
-The json::document library is licensed under the MIT License.  <http://opensource.org/licenses/MIT>
+`data::value` and `odata::value` are forward declarations only; XML documents use the inherited `json::value` or `ojson::value` type. The accessor and container methods below apply to each concrete `value`/`document` pair.
 
-To use JSON in a c++ project, just include json.hpp and compile json.cpp with your own modules.
+## Building
 
-Included along side the json library are some extras that aren't required for normal use.  These are the data.?pp and jsonquery.?pp files.
+```sh
+cmake -S . -B build -DJSON_SAMPLES=ON -DJSON_TEST_EXAMPLE=ON
+cmake --build build
+cmake --install build
+```
 
-data.?pp is an extension to json.?pp that allows a certain subset of XML to be parsed or written using the same syntax for accessing the data as the json library.
+CMake options: `JSON_ORDERED` (default `ON`), `JSON_DATA_DOCUMENT` (default `ON`), `JSON_SAMPLES` (default `OFF`), `JSON_TEST_EXAMPLE` (default `OFF`), `JSON_USE_TEMP_FILES`, `JSON_RESTORE_TEMP_FILES`, and `ADDRESSSANITIZER`. The first two select the namespace variants above; `JSON_SAMPLES` builds conversion tools, `JSON_TEST_EXAMPLE` builds `testbed`, and the remaining options enable file protection or sanitizer flags. Run `cmake --build build --target testbed && build/testbed` for the manual checks.
 
-jsonquery.?pp is an experimental query language in JSON that is designed to get data from a JSON document much like an SQL statement would get it from a database.
-
-This document is incomplete, but gets most of the information across.
-
-Building json::document
------------------------
-The easiest way to build json::document is with CMake.
-
-The following instructions should work on all systems, but you can tailor to taste:
-
-1. Clone the repository:
-
-        git clone https://github.com/VA7ODR/json.git json
-
-2. Enter the local repository folder:
-
-        cd json
-
-3. Update Submodules:
-
-        git submodule update --init --remote --recursive
-
-4. Create bukld folder:
-
-        mkdir build
-
-5. Enter build folder:
-
-        cd build
-
-6. Run CMake (the -D optins are not required, but turn on certain features described below.):
-
-        cmake ../ -DORDERED_JSON -DDATA_DOCUMENT -DSAMPLES
-
-7. Build:
-
-        make
-
-8. Install the library, header files and sample tools:
-
-        make install
-
-The build options are as follows:
-
-- ORDERED_JSON - also create ojson::document, which instead of always outputting json with object keys in alphabetical order, it will output in the order the values were added.  This also includes the ability to insert key/value pairs anywhere in an object.
-- DATA_DOCUMENT - also create data::document (and odata::document if ORDERED_JSON is selected).  This class can not only read and write json like json::document, but can also read and write a subset of XML (Where sub tags are not surrounded by multuple CDATA blocks) and can convert between JSON and XML.  Attributes will be stored in objects with '@' prepended to the attribute name and if there are attributes for a tag containing CDATA, the CDATA will be in a key value pair with the key "#value".
-- SAMPLES - this will create some useful command line tools for conversion back and forth between JSON and XML and to make JSON and XML prettier by adding newlines and tabs to format the document.
-
-Using json::document
---------------------
+## Using `value` and `document`
 
 There are two ways to parse and two ways to write JSON documents:
 - parse(string) - pass a JSON string and it will parse it.  This returns true if parsing was successful.  parseResult() will contain error information if parsing failed.
 - parseFile(string) - will parse a file with the name given.  This returns true if parsing was successful.  parseResult() will contain error information if parsing failed.
-- write(pretty) - will return a std::string containing the JSON document.  Pass true for pretty if you want the JSON formatted with indentation and line feeds or omit pretty or pass false to have the JSON without tabs or line feeds.
+- write(pretty) - returns an sdstring containing the JSON document.  Pass true for pretty if you want the JSON formatted with indentation and line feeds or omit pretty or pass false to have the JSON without tabs or line feeds.
 - writeFile(string, pretty) - will write the JSON document to the file passed as string.  Pretty works the same as above.  Will return true if the file could be opened and saved or false if the file could not be written.
 
 Here is an example of reading and updating a simple JSON file with json::document:
@@ -77,7 +34,7 @@ Here is an example of reading and updating a simple JSON file with json::documen
     json::document jDoc;
     if(jDoc.parseFile("sample.json")){
         // read was successful
-        printf("foo = %s\n", jDoc["bar"].c_str());
+        printf("bar = %s\n", jDoc["bar"].c_str());
     } else {
         printf("Error reading JSON file: %s\n", jDoc.parseResult().c_str());
     }
@@ -102,7 +59,7 @@ Any numeric value, boolean, char array / string, object, or array can be assigne
     jDoc["number"] = 1.234;
     jDoc["string"] = "Hello, world!";
     jDoc["object"] = jDoc["other_object"];
-    jDoc["array"] = jDoc["oterh_array"];
+    jDoc["array"] = jDoc["other_array"];
     
 You can retrieve values from a json::document with several conversion functions:
 
@@ -110,8 +67,7 @@ You can retrieve values from a json::document with several conversion functions:
 - number() - returns a double. (Converts from strings as appropriate.)
 - integer() - returns a 64bit integer.  (Converts from strings as appropriate.)
 - c_str() - returns a const char *.  Guaranteed to not be NULL.  (Converts from numbers as appropriate)
-- string() - returns a std::string & (Converts from numbers as appropriate)
-- cString() - returns a char *.  NULL if it doesn't exist or the JSON value is null. (Converts from numbers as appropriate)
+- string() - returns a std::string & (converts from numbers as appropriate). Use _sdstring() for the project string type.
 
 Here are some examples:
 
@@ -205,8 +161,11 @@ For reverse_iterators:
         std::cout << "key = " << sKey << ", value = " << (*rit).number() << "\n";
     }
 
-Real World Example
-------------------
+## XML data documents
+
+`data::document` and `odata::document` support the same inherited JSON accessors plus `parseXML`, `parseXMLFile`, `writeXML`, and `writeXMLFile`. XML attributes are represented with an `@` prefix; character data for tagged values with attributes uses the `#value` key. `rootTag()`, `standAlone()`, `forceXMLHeader()`, and `noXMLHeader()` control XML output. The XML conversion uses the bundled `tinyxml` library.
+
+## Real-world example
 
 The following program will open a JSON file and resave it in a "pretty" format with indentation and line feeds.
 
@@ -219,13 +178,13 @@ The following program will open a JSON file and resave it in a "pretty" format w
             if(jDoc.parseFile(argv[i])){
                 jDoc.writeFile(argv[i], true);
             } else {
-                std::cout << "Failed to open file " << argv[i] << ": " < jDoc.parseResult() << "\n";
+                std::cout << "Failed to open file " << argv[i] << ": " << jDoc.parseResult() << "\n";
             }
         }
         return 0;
     }
 
-LICENCE
+License
 -------
 Copyright (c) 2012-2026 James Baker
 
