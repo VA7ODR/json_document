@@ -606,10 +606,23 @@ namespace JSON_NAMESPACE
 		numberParse(a, inputString, bFailed);
 	}
 
-	inline bool isValidUTF8Character(const unsigned char & c)
+	size_t utf8SequenceLength(const unsigned char * p, size_t remaining)
 	{
-		// Check if the byte is a valid start of a UTF-8 character
-		return (c & 0xC0) != 0x80;
+		if (!remaining || *p < 0x80) {
+			return 0;
+		}
+		size_t length = *p < 0xE0 ? 2 : *p < 0xF0 ? 3 : 4;
+		if (remaining < length || (length == 2 && *p < 0xC2) || (length == 3 && *p == 0xE0 && p[1] < 0xA0) ||
+			(length == 3 && *p == 0xED && p[1] >= 0xA0) || (length == 4 && *p == 0xF0 && p[1] < 0x90) ||
+			(length == 4 && *p == 0xF4 && p[1] >= 0x90) || (length == 4 && *p > 0xF4)) {
+			return 0;
+		}
+		for (size_t i = 1; i < length; ++i) {
+			if ((p[i] & 0xC0) != 0x80) {
+				return 0;
+			}
+		}
+		return length;
 	}
 
 	size_t esize(const sdstring & ins)
@@ -635,9 +648,18 @@ namespace JSON_NAMESPACE
 			6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,	   // F0
 		};
 		auto end = ins.end();
-		for (auto it = ins.begin(); it != end; ++it) {
+		for (auto it = ins.begin(); it != end;) {
 			const char & c	= *it;
+			if ((unsigned char)c >= 0x80) {
+				size_t length = utf8SequenceLength((const unsigned char *)&c, (size_t)(end - it));
+				if (length) {
+					ret += length;
+					it += length;
+					continue;
+				}
+			}
 			ret			   += (size_t)m_escape[(const unsigned char)(c)];
+			++it;
 		}
 		return ret;
 	}
@@ -668,6 +690,15 @@ namespace JSON_NAMESPACE
 		const auto * p			= (const unsigned char *)ins.c_str();
 		for (size_t i = 0; i < l; ++i, ++p) {
 			const unsigned char & c = *p;
+			if (c >= 0x80) {
+				size_t length = utf8SequenceLength(p, l - i);
+				if (length) {
+					ptr.set((const char *)p, length);
+					i += length - 1;
+					p += length - 1;
+					continue;
+				}
+			}
 			char e					= m_escape[c];
 			switch (e) {
 				case 0:
@@ -712,6 +743,15 @@ namespace JSON_NAMESPACE
 		const auto * p			= (const unsigned char *)ins.c_str();
 		for (size_t i = 0; i < l; ++i, ++p) {
 			const unsigned char & c = *p;
+			if (c >= 0x80) {
+				size_t length = utf8SequenceLength(p, l - i);
+				if (length) {
+					S.write((const char *)p, length);
+					i += length - 1;
+					p += length - 1;
+					continue;
+				}
+			}
 			char e					= m_escape[c];
 			switch (e) {
 				case 0:
